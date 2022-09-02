@@ -1,37 +1,47 @@
 // Recorder component
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useStream } from "./Stream";
 
 const options = {
   audioBitsPerSecond: 44100,
 };
 
-async function requestRecorder() {
-  // check if browser supports web audio API
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.log("Web audio API not supported.");
-    return;
-  }
-  let stream = null;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    /* use the stream */
-  } catch (err: any) {
-    console.log(`navigator.mediaDevices.getUserMedia() failed: ${err.message}`);
-    /* handle the error */
-  }
+// async function requestAudioStream() {
+//   // check if browser supports web audio API
+//   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+//     console.log("Web audio API not supported.");
+//     return;
+//   }
+//   let stream = null;
+//   try {
+//     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+//     /* use the stream */
+//   } catch (err: any) {
+//     console.log(`navigator.mediaDevices.getUserMedia() failed: ${err.message}`);
+//     /* handle the error */
+//   }
 
-  if (stream === null) {
-    console.log("Stream is null");
-  }
+//   if (stream === null) {
+//     console.log("Stream is null");
+//   }
 
-  return new MediaRecorder(stream as MediaStream, options);
-}
+//   return stream as MediaStream;
+// }
 
 export const useRecorder = () => {
   const [recorder, setRecorder] = useState<MediaRecorder>();
   const [recording, setRecording] = useState(false);
   const [audio, setAudio] = useState<Blob>();
   const [view, setView] = useState<Float32Array>();
+
+  const { stream, requestAudioStream } = useStream();
+
+  const handleData = useCallback(
+    (event: BlobEvent) => {
+      setAudio(event.data);
+    },
+    [setAudio]
+  );
 
   useEffect(() => {
     if (audio) {
@@ -56,16 +66,8 @@ export const useRecorder = () => {
 
   useEffect(() => {
     // Lazily obtain recorder first time we're recording.
-    if (!recorder) {
-      if (recording) {
-        requestRecorder()
-          .then((recorder) => {
-            return setRecorder(recorder);
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      }
+    if (!recorder && recording && stream) {
+      setRecorder(new MediaRecorder(stream as MediaStream, options));
       return;
     }
 
@@ -79,40 +81,20 @@ export const useRecorder = () => {
     }
 
     // Obtain the audio when ready.
-    const handleData = (e: { data: BlobPart }) => {
-      // const blob = new Blob([e.data]);
-      // let ctx = new AudioContext();
-      // let reader = new FileReader() as any;
-      const blob = new Blob([e.data], { type: "audio/mpeg" });
-      setAudio(blob);
 
-      // reader.readAsArrayBuffer(blob);
-      // reader.onloadend = () => {
-      //   ctx
-      //     .decodeAudioData(reader.result)
-      //     .then(function (decodedData) {
-      //       // create new blob with type of mp3 from e.data
-      //       const view = decodedData.getChannelData(0);
-
-      //       setAudio(blob); // This might be done by
-      //       // setAudioURL(URL.createObjectURL(e.data)); //log of base64data is "data:audio/ogg;
-      //     })
-      //     .catch((err) => {
-      //       console.error(err);
-      //       // alert user of error
-      //       console.log("Error decoding audio data. Please try again.");
-      //     });
-      // };
-    };
     recorder && recorder.addEventListener("dataavailable", handleData);
     // Clean up.
     return () =>
       recorder && recorder.removeEventListener("dataavailable", handleData);
-  }, [recorder, recording]);
+  }, [recorder, recording, stream, handleData]);
 
   const startRecording = (e: MouseEvent) => {
     e.preventDefault();
-    setRecording(true);
+    if (!stream) {
+      requestAudioStream().then(() => setRecording(true));
+    } else {
+      setRecording(true);
+    }
   };
 
   const stopRecording = () => {
