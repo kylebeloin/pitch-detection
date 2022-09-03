@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useStream } from "./Stream";
 
 const options = {
-  audioBitsPerSecond: 44100,
+  audioBitsPerSecond: 48000,
 };
 
 // async function requestAudioStream() {
@@ -29,40 +29,19 @@ const options = {
 // }
 
 export const useRecorder = () => {
-  const [recorder, setRecorder] = useState<MediaRecorder>();
+  // const [recorder, setRecorder] = useState<MediaRecorder>();
   const [recording, setRecording] = useState(false);
-  const [audio, setAudio] = useState<Blob>();
-  const [view, setView] = useState<Float32Array>();
 
-  const { stream, requestAudioStream } = useStream();
+  const { stream, requestAudioStream, recorder, setRecorder, audio, setAudio } =
+    useStream();
 
   const handleData = useCallback(
     (event: BlobEvent) => {
+      console.log(event);
       setAudio(event.data);
     },
     [setAudio]
   );
-
-  useEffect(() => {
-    if (audio) {
-      let ctx = new AudioContext();
-      let reader = new FileReader() as any;
-      reader.readAsArrayBuffer(audio);
-      reader.onloadend = () => {
-        ctx
-          .decodeAudioData(reader.result)
-          .then(function (decodedData) {
-            // create new blob with type of mp3 from e.data
-            setView(decodedData.getChannelData(0));
-          })
-          .catch((err) => {
-            console.error(err);
-            // alert user of error
-            console.log("Error decoding audio data. Please try again.");
-          });
-      };
-    }
-  }, [audio]);
 
   useEffect(() => {
     // Lazily obtain recorder first time we're recording.
@@ -73,9 +52,9 @@ export const useRecorder = () => {
 
     // Manage recorder state.
     if (recorder) {
-      if (recorder["state"] === "recording") {
+      if (recorder["state"] === "recording" && !recording) {
         recorder.stop();
-      } else if (recorder["state"] === "inactive") {
+      } else if (recorder["state"] === "inactive" && recording) {
         recorder.start();
       }
     }
@@ -86,7 +65,7 @@ export const useRecorder = () => {
     // Clean up.
     return () =>
       recorder && recorder.removeEventListener("dataavailable", handleData);
-  }, [recorder, recording, stream, handleData]);
+  }, [recorder, recording, stream, handleData, setRecorder]);
 
   const startRecording = (e: MouseEvent) => {
     e.preventDefault();
@@ -101,5 +80,5 @@ export const useRecorder = () => {
     setRecording(false);
   };
 
-  return { audio, recording, startRecording, stopRecording, view };
+  return { audio, recording, startRecording, stopRecording };
 };

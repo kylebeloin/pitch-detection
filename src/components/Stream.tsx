@@ -7,8 +7,12 @@ import {
 } from "react";
 
 interface StreamContext {
+  audio?: Blob;
   stream?: MediaStream;
+  recorder?: MediaRecorder;
   requestAudioStream: () => Promise<MediaStream>;
+  setAudio: (audio: Blob) => void;
+  setRecorder: (recorder: MediaRecorder) => void;
 }
 
 const streamContext = createContext({} as StreamContext);
@@ -19,6 +23,9 @@ export const useStream = () => {
 
 function useStreamContext() {
   const [stream, setStream] = useState<MediaStream>();
+  const [audio, setAudio] = useState<Blob>();
+  const [recorder, setRecorder] = useState<MediaRecorder>();
+
   const requestAudioStream = async () => {
     if (stream) {
       return stream;
@@ -29,7 +36,8 @@ function useStreamContext() {
     setStream(newStream);
     return newStream;
   };
-  return { stream, requestAudioStream };
+
+  return { stream, requestAudioStream, audio, setAudio, recorder, setRecorder };
 }
 
 export const StreamProvider: FC<PropsWithChildren> = ({ children }) => {
