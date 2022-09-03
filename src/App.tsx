@@ -1,16 +1,10 @@
-import { Recorder } from "./components/Recorder";
-import { StreamProvider } from "./components/Stream";
-import { CanvasProvider } from "./components/Canvas";
+import { AudioVisContainer } from "./components/AudioVisContainer";
 import "./App.css";
 
 function App() {
   return (
     <div className="App">
-      <CanvasProvider>
-        <StreamProvider>
-          <Recorder />
-        </StreamProvider>
-      </CanvasProvider>
+      <AudioVisContainer />
     </div>
   );
 }

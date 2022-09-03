@@ -2,23 +2,11 @@ import { useRecorder } from "./useRecorder";
 import { useEffect, useCallback } from "react";
 import { useAudioAnalyzer } from "./useAudioAnalyzer";
 import { useStream } from "./Stream";
+import { Visualization } from "./Visualization";
 
 export const Recorder = () => {
   const { recording, startRecording, stopRecording } = useRecorder();
-  const { data } = useAudioAnalyzer();
   const { audio } = useStream();
-
-  const logAudio = useCallback(() => {
-    if (data) {
-      console.log(data);
-    }
-  }, [data]);
-
-  useEffect(() => {
-    if (data) {
-      logAudio();
-    }
-  }, [data, logAudio]);
 
   return (
     <div>

@@ -2,8 +2,21 @@ export const options = {
   freqMin: 50,
   freqLow: 50,
   freqHigh: 200,
-  freqMax: 400,
+  freqMax: 500,
+  freqRate: 100,
   sampleRate: 48000,
+  enmax: 0.1,
+  enmin: 0.5,
+  disptime: 5,
+  style: {
+    BACKCOLOUR: "#fafafa",
+    GRIDCOLOUR: "#DDDDDD",
+    AMPCOLOUR: "#2a6cad",
+    FREQCOLOUR: "#b8dcff",
+    FREQWIDTH: 2,
+
+    GRIDWIDTH: 1,
+  },
 };
 
 export class AutoCorrelation {

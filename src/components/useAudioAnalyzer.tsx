@@ -7,6 +7,7 @@ export const useAudioAnalyzer = () => {
   const [view, setView] = useState<Float32Array>();
   const [context, setContext] = useState<AudioContext>();
   const [autoCorrelator, setAutoCorrelator] = useState<AutoCorrelation>();
+  const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<any[][]>();
 
   const handleAudio = useCallback(() => {
@@ -37,7 +38,7 @@ export const useAudioAnalyzer = () => {
     }
   }, [context, audio]);
 
-  const processAudio = useCallback(() => {
+  const processAudio = useCallback(async () => {
     if (view && !autoCorrelator) {
       let { freqMin, freqLow, freqHigh, freqMax, sampleRate } = options;
       let ac = new AutoCorrelation(
@@ -58,7 +59,6 @@ export const useAudioAnalyzer = () => {
       for (let i = 0; i < view.length; i++) {
         animationBuff[animationPosition++] = view[i].valueOf();
         if (animationPosition === animationLength) {
-          console.log("Animation is processing");
           let fxest = autoCorrelator.calculateFrequency(
             animationBuff,
             animationLength
@@ -82,24 +82,30 @@ export const useAudioAnalyzer = () => {
             j++, animationPosition++
           )
             animationBuff[animationPosition] = animationBuff[j];
+          console.log("Track is being processed");
         }
       }
-      console.log("Track is processed");
       setData(track);
     }
   }, [view, autoCorrelator]);
 
   useEffect(() => {
     if (recorder) {
+      setLoading(true);
       handleAudio();
     }
   }, [recorder, handleAudio]);
 
   useEffect(() => {
     if (view) {
-      processAudio();
+      processAudio().then(() => {
+        setLoading(false);
+      });
     }
+    return () => {
+      setLoading(false);
+    };
   }, [view, processAudio]);
 
-  return { processAudio, data };
+  return { processAudio, data, loading };
 };
