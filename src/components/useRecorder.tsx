@@ -37,7 +37,6 @@ export const useRecorder = () => {
 
   const handleData = useCallback(
     (event: BlobEvent) => {
-      console.log(event);
       setAudio(event.data);
     },
     [setAudio]

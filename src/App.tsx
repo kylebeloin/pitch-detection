@@ -1,10 +1,12 @@
 import { AudioVisContainer } from "./components/AudioVisContainer";
 import "./App.css";
-
+import { StreamProvider } from "./components/Stream";
 function App() {
   return (
     <div className="App">
-      <AudioVisContainer />
+      <StreamProvider>
+        <AudioVisContainer />
+      </StreamProvider>
     </div>
   );
 }

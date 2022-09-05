@@ -4,10 +4,13 @@ import {
   useContext,
   createContext,
   PropsWithChildren,
+  useRef,
+  useEffect,
 } from "react";
 
 interface StreamContext {
   audio?: Blob;
+  audioRef?: React.RefObject<HTMLAudioElement>;
   stream?: MediaStream;
   recorder?: MediaRecorder;
   requestAudioStream: () => Promise<MediaStream>;
@@ -25,6 +28,7 @@ function useStreamContext() {
   const [stream, setStream] = useState<MediaStream>();
   const [audio, setAudio] = useState<Blob>();
   const [recorder, setRecorder] = useState<MediaRecorder>();
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const requestAudioStream = async () => {
     if (stream) {
@@ -37,7 +41,27 @@ function useStreamContext() {
     return newStream;
   };
 
-  return { stream, requestAudioStream, audio, setAudio, recorder, setRecorder };
+  useEffect(() => {
+    if (audioRef && audioRef.current && audio) {
+      audioRef.current.src = URL.createObjectURL(audio);
+      audioRef.current.onloadeddata = () => {
+        let audio = audioRef.current as HTMLAudioElement;
+        if (audio.duration === Infinity) {
+          audio.currentTime = 1e101;
+        }
+      };
+    }
+  }, [audio, audioRef]);
+
+  return {
+    stream,
+    requestAudioStream,
+    audio,
+    audioRef,
+    setAudio,
+    recorder,
+    setRecorder,
+  };
 }
 
 export const StreamProvider: FC<PropsWithChildren> = ({ children }) => {

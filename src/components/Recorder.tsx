@@ -1,12 +1,9 @@
 import { useRecorder } from "./useRecorder";
-import { useEffect, useCallback } from "react";
-import { useAudioAnalyzer } from "./useAudioAnalyzer";
 import { useStream } from "./Stream";
-import { Visualization } from "./Visualization";
 
 export const Recorder = () => {
   const { recording, startRecording, stopRecording } = useRecorder();
-  const { audio } = useStream();
+  const { audioRef } = useStream();
 
   return (
     <div>
@@ -17,7 +14,7 @@ export const Recorder = () => {
       >
         {recording ? "Stop" : "Start"}
       </button>
-      <audio src={audio ? URL.createObjectURL(audio) : ""} controls />
+      <audio ref={audioRef} controls />
     </div>
   );
 };
