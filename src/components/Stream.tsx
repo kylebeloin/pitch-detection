@@ -46,8 +46,13 @@ function useStreamContext() {
       audioRef.current.src = URL.createObjectURL(audio);
       audioRef.current.onloadeddata = () => {
         let audio = audioRef.current as HTMLAudioElement;
-        if (audio.duration === Infinity) {
+        if (audio.duration === Infinity || isNaN(audio.duration)) {
           audio.currentTime = 1e101;
+          audio.ontimeupdate = () => {
+            audio.ontimeupdate = () => {};
+            audio.currentTime = 0;
+            console.log("audio duration", audio.duration);
+          };
         }
       };
     }

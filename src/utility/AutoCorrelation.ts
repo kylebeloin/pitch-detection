@@ -197,7 +197,6 @@ export const drawPitch = (
   let currentTime = data.length / options.freqRate;
   let disptime = currentTime;
 
-  console.log("Current time is " + currentTime);
   ctx.clearRect(0, 0, canvas.width as number, canvas.height as number);
   ctx.fillStyle = options.style.BACKCOLOUR;
 
