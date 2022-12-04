@@ -1,14 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
 
-interface VisualizationEventHandler {
-  type: string;
-  callback: (
-    event: any,
-    context: CanvasRenderingContext2D,
-    canvas: HTMLCanvasElement
-  ) => any;
-}
-
 interface VisualizationProps {
   draw: (
     data: any,

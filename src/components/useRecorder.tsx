@@ -6,34 +6,18 @@ const options = {
   audioBitsPerSecond: 48000,
 };
 
-// async function requestAudioStream() {
-//   // check if browser supports web audio API
-//   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-//     console.log("Web audio API not supported.");
-//     return;
-//   }
-//   let stream = null;
-//   try {
-//     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-//     /* use the stream */
-//   } catch (err: any) {
-//     console.log(`navigator.mediaDevices.getUserMedia() failed: ${err.message}`);
-//     /* handle the error */
-//   }
-
-//   if (stream === null) {
-//     console.log("Stream is null");
-//   }
-
-//   return stream as MediaStream;
-// }
-
 export const useRecorder = () => {
   // const [recorder, setRecorder] = useState<MediaRecorder>();
   const [recording, setRecording] = useState(false);
 
-  const { stream, requestAudioStream, recorder, setRecorder, audio, setAudio } =
-    useStream();
+  const {
+    stream,
+    requestUserMediaStream,
+    recorder,
+    setRecorder,
+    audio,
+    setAudio,
+  } = useStream();
 
   const handleData = useCallback(
     (event: BlobEvent) => {
@@ -68,8 +52,8 @@ export const useRecorder = () => {
 
   const startRecording = (e: MouseEvent) => {
     e.preventDefault();
-    if (!stream) {
-      requestAudioStream().then(() => setRecording(true));
+    if (!stream && requestUserMediaStream) {
+      requestUserMediaStream().then(() => setRecording(true));
     } else {
       setRecording(true);
     }

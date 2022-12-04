@@ -28,7 +28,7 @@ export const getElementAtLocation = (x: number, y: number) => {
   return document.elementFromPoint(x, y);
 };
 
-export const getMousePosition = (event: any) => {
+export const getMousePosition = (event: Event) => {
   const { x, y } = eventLocation(event);
   const element = getElementAtLocation(x, y) as HTMLElement;
   const rect = element?.getBoundingClientRect();

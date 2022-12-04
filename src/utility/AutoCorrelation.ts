@@ -158,10 +158,113 @@ export const processAudio = (view: Float32Array) => {
         j++, animationPosition++
       )
         animationBuff[animationPosition] = animationBuff[j];
-      console.log("Track is being processed");
     }
   }
   return track;
+};
+
+export const normalizeData = (data: number[][], canvas: HTMLCanvasElement) => {
+  const [logFreqMin, logFreqMax] = [
+    Math.log(options.freqMin),
+    Math.log(options.freqMax),
+  ];
+
+  for (
+    let i = data.length - canvas.width, x = 0;
+    i < data.length - 1;
+    i++, x++
+  ) {
+    if (i >= 1 && data[i][0] > 0) {
+      let f1 = data[i - 1][0];
+      let f2 = data[i][0];
+      let f3 = data[i + 1][0];
+      if (
+        f1 > 0.45 * f2 &&
+        f1 < 0.55 * f2 &&
+        f3 > 0.45 * f2 &&
+        f3 < 0.55 * f2
+      ) {
+      } else if (
+        f1 > 1.8 * f2 &&
+        f1 < 2.2 * f2 &&
+        f3 > 1.8 * f2 &&
+        f3 < 2.2 * f2
+      ) {
+        data[i][0] = 2 * f2;
+      } else if (f1 < 0.75 * f2 && f3 < 0.75 * f2) data[i][0] = 0;
+      else if (f1 > 1.25 * f2 && f3 > 1.25 * f2) data[i][0] = 0;
+    }
+  }
+
+  const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+  const std = (arr: number[]) => {
+    const m = mean(arr);
+    return Math.sqrt(mean(arr.map((a) => Math.pow(a - m, 2))));
+  };
+
+  const isOutlier = (arr: number[]) => {
+    // strip zero values
+    const d = arr.filter((a) => a > 0);
+
+    const m = mean(d);
+    const s = std(arr);
+    const z = (arr[0] - m) / s;
+    return z > 3 || z < -3;
+  };
+
+  // const localMedian = (arr: number[], i: number) => {
+  //   const window = 5;
+  //   const start = Math.max(0, i - window);
+  //   const end = Math.min(arr.length, i + window);
+  //   const windowArr = arr.slice(start, end);
+  //   windowArr.sort((a, b) => a - b);
+  //   const median = windowArr[Math.floor(windowArr.length / 2)];
+  //   console.log(median);
+  //   return median;
+  // };
+
+  const localMean = (arr: number[], i: number) => {
+    const window = 6;
+    const start = Math.max(0, i - window);
+    const end = Math.min(arr.length, i + window);
+    const windowArr = arr.slice(start, end);
+    const mean = windowArr.reduce((a, b) => a + b, 0) / windowArr.length;
+    console.log(mean);
+    return mean;
+  };
+
+  let currentTime = data.length / options.freqRate;
+  let disptime = currentTime;
+
+  let yData = [];
+
+  for (let i = 0; i < data.length - 1; i++) {
+    if (i >= 0 && data[i][0] > 0) {
+      let x1 = (i - 0) / (disptime * options.freqRate);
+      let x2 = (i + 1) / (disptime * options.freqRate);
+
+      let y1 = (Math.log(data[i][0]) - logFreqMin) / (logFreqMax - logFreqMin);
+      let y2 =
+        (Math.log(data[i + 1][0]) - logFreqMin) / (logFreqMax - logFreqMin);
+      let change = Math.abs(
+        (2 * (data[i][0] - data[i + 1][0])) / (data[i][0] + data[i + 1][0])
+      );
+      if (data[i + 1][0] > 0 && change < 0.2) {
+        let xMid = (x1 + x2) / 2;
+        let yMid = (y1 + y2) / 2;
+        yData.push([xMid, yMid]);
+      } else if (data[i + 1][0] > 0 && change > 0.2) {
+        data[i + 1][0] = data[i - 1][0];
+      }
+    } else {
+      let x1 = i / (disptime * options.freqRate);
+      let y1 = (Math.log(data[i][0]) - logFreqMin) / (logFreqMax - logFreqMin);
+      yData.push([x1, y1]);
+    }
+  }
+
+  return yData;
 };
 
 export const drawPitch = (
@@ -173,6 +276,7 @@ export const drawPitch = (
     Math.log(options.freqMin),
     Math.log(options.freqMax),
   ];
+  // convert this draw function to return just the data
 
   for (
     let i = data.length - canvas.width, x = 0;
@@ -205,6 +309,7 @@ export const drawPitch = (
   ctx.strokeStyle = options.style.GRIDCOLOUR;
   ctx.lineWidth = 1;
   ctx.beginPath();
+
   let tshift = currentTime - Math.floor(currentTime / 0.1) * 0.1;
   for (let t = 0; t < disptime + tshift; t += 0.1) {
     let x = Math.round((canvas.width * (t - tshift)) / disptime);
@@ -238,6 +343,7 @@ export const drawPitch = (
   ctx.strokeStyle = options.style.AMPCOLOUR;
   ctx.lineWidth = 2;
   ctx.beginPath();
+  let d1 = [];
   for (let i = 0; i < data.length - 1; i++) {
     let x1 = (i * canvas.width) / (disptime * options.freqRate);
     let x2 = ((i + 1) * canvas.width) / (disptime * options.freqRate);
@@ -256,25 +362,34 @@ export const drawPitch = (
     if (data[i + 1][0] > 0 && change < 0.2) {
       for (let x = x1; x <= x2; x++) {
         let m = (x - x1) / (x2 - x1);
-        ctx.moveTo(
-          x,
-          canvas.height - ((1 - m) * y1 + m * y2) + ((1 - m) * w1 + m * w2) / 2
-        );
-        ctx.lineTo(
-          x,
-          canvas.height - ((1 - m) * y1 + m * y2) - ((1 - m) * w1 + m * w2) / 2
-        );
+        let yStart =
+          canvas.height - ((1 - m) * y1 + m * y2) + ((1 - m) * w1 + m * w2) / 2;
+        let yEnd =
+          canvas.height - ((1 - m) * y1 + m * y2) - ((1 - m) * w1 + m * w2) / 2;
+        d1.push([
+          x / canvas.width,
+          yStart / canvas.height,
+          yEnd / canvas.height,
+        ]);
+        ctx.moveTo(x, yStart);
+        ctx.lineTo(x, yEnd);
       }
     } else {
+      let yStart = canvas.height - y1 + w1 / 2;
+      let yEnd = canvas.height - y1 - w1 / 2;
+      d1.push([x1, yStart, yEnd]);
       ctx.moveTo(x1, canvas.height - y1 + w1 / 2);
       ctx.lineTo(x1, canvas.height - y1 - w1 / 2);
     }
   }
+  console.log(d1);
   ctx.stroke();
 
   ctx.strokeStyle = options.style.FREQCOLOUR;
   ctx.lineWidth = 2;
   ctx.beginPath();
+
+  let d2 = [];
 
   for (let i = 0; i < data.length - 1; i++) {
     if (i >= 0 && data[i][0] > 0) {
@@ -291,13 +406,21 @@ export const drawPitch = (
         (2 * (data[i][0] - data[i + 1][0])) / (data[i][0] + data[i + 1][0])
       );
       if (data[i + 1][0] > 0 && change < 0.2) {
+        let xMid = (x1 + x2) / 2;
+        let yMid = (y1 + y2) / 2;
+        d2.push([xMid / canvas.width, yMid / canvas.height]);
         ctx.moveTo(x1, canvas.height - y1);
         ctx.lineTo(x2, canvas.height - y2);
       } else {
+        d2.push([x1 / canvas.width, y1 / canvas.height]);
         ctx.moveTo(x1, canvas.height - y1 - 1);
         ctx.lineTo(x1, canvas.height - y1 + 1);
       }
+    } else {
+      let x1 = ((i - 0) * canvas.width) / (disptime * options.freqRate);
+      d2.push([x1, 0]);
     }
   }
+  console.log(d2);
   ctx.stroke();
 };

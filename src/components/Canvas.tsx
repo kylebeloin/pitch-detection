@@ -35,11 +35,9 @@ function useCanvasContext() {
 
   const renderCanvas = async () => {
     if (parent) {
-      console.log(parent);
       const canvas = await requestCanvas();
       const context = canvas.getContext("2d") as CanvasRenderingContext2D;
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = "red";
 
       context.fillRect(0, 0, 100, 100);
       context.fillRect(100, 100, 100, 100);
